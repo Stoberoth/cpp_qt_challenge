@@ -9,22 +9,20 @@ class MainWindow : public QMainWindow
 {
     Q_OBJECT
 
-    private:
-    QLineEdit* m_lineEdit;
-    QPushButton* m_pushButton;
-    QListWidget* m_listWidget;
+private:
+    QLineEdit *m_lineEdit;
+    QPushButton *m_pushButton;
+    QPushButton *m_saveButton;
+    QListWidget *m_listWidget;
+    QString m_fileName;
 
-    inline void getLineEditText(){
-        m_listWidget->addItem(m_lineEdit->text());
-        m_lineEdit->clear();
-    }
+    void getLineEditText();
+    void saveTasks();
+    void loadTasks();
 
-
-    public:
+public:
     MainWindow();
     ~MainWindow();
 
-
-    protected:
-
+protected:
 };
