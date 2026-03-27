@@ -12,14 +12,15 @@ MainWindow::MainWindow()
     m_lineEdit = new QLineEdit(this);
     m_pushButton = new QPushButton(QString("Ajouter"), this);
     m_saveButton = new QPushButton(QString("Sauvegarder"), this);
-    m_listWidget = new QListWidget(this);
-
+    m_listView = new QListView(this);
+    m_model = new QStringListModel(this);
+    m_listView->setModel(m_model);
     m_fileName = "todos.txt";
 
     QVBoxLayout *layout = new QVBoxLayout();
     layout->addWidget(m_lineEdit);
     layout->addWidget(m_pushButton);
-    layout->addWidget(m_listWidget);
+    layout->addWidget(m_listView);
     layout->addWidget(m_saveButton);
     centralWidget->setLayout(layout);
 
@@ -36,7 +37,16 @@ MainWindow::~MainWindow()
 
 void MainWindow::getLineEditText()
 {
-    m_listWidget->addItem(m_lineEdit->text());
+    if(m_lineEdit->text() == "")
+    {
+        return;
+    }
+    // on récupére l'existant
+    QStringList list = m_model->stringList();
+    // on ajoute la nouvelle entrés
+    list.append(m_lineEdit->text());
+    // on met a jour
+    m_model->setStringList(list);
     m_lineEdit->clear();
 }
 
@@ -45,9 +55,10 @@ void MainWindow::saveTasks()
     QFile saveFile(m_fileName);
     if(saveFile.open(QIODevice::WriteOnly | QIODevice::Text)){
         QTextStream stream(&saveFile);
-        for(int i = 0; i < m_listWidget->count(); ++i)
+        QStringList list = m_model->stringList();
+        for(const QString& line : list)
         {
-            stream << m_listWidget->item(i)->text() << "\n";
+            stream << line << "\n";
         }
         saveFile.close();
     }
@@ -62,10 +73,12 @@ void MainWindow::loadTasks()
     }
     if(saveFile.open(QIODevice::ReadOnly | QIODevice::Text)){
         QTextStream stream(&saveFile);
+        QStringList tmpList;
         while (!stream.atEnd())
         {
-            m_listWidget->addItem(stream.readLine());
+            tmpList.append(stream.readLine());
         }
+        m_model->setStringList(tmpList);
         
         saveFile.close();
     }

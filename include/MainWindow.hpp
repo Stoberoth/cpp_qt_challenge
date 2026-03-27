@@ -3,7 +3,8 @@
 #include <QWidget>
 #include <QLineEdit>
 #include <QPushButton>
-#include <QListWidget>
+#include <QStringListModel>
+#include <QListView>
 
 class MainWindow : public QMainWindow
 {
@@ -13,7 +14,8 @@ private:
     QLineEdit *m_lineEdit;
     QPushButton *m_pushButton;
     QPushButton *m_saveButton;
-    QListWidget *m_listWidget;
+    QListView *m_listView;
+    QStringListModel* m_model;
     QString m_fileName;
 
     void getLineEditText();
