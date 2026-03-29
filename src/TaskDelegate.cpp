@@ -27,11 +27,13 @@ void TaskDelegate::paint(QPainter *painter, const QStyleOptionViewItem &option, 
     painter->drawLine(option.rect.bottomLeft(), option.rect.bottomRight());
 
     // 5. Dessiner le texte (récupéré du modèle)
+
     QString text = index.data(Qt::DisplayRole).toString();
     QRect textRect = option.rect;
     textRect.setLeft(textRect.left() + 10);
 
     // Couleur du texte
+
     if (option.state & QStyle::State_Selected)
         painter->setPen(option.palette.highlightedText().color());
     else
@@ -39,14 +41,12 @@ void TaskDelegate::paint(QPainter *painter, const QStyleOptionViewItem &option, 
 
     painter->drawText(textRect, Qt::AlignLeft | Qt::AlignVCenter, text);
 
-    // 6. (Optionnel) Dessiner une checkbox si la tâche est complétée
     bool isCompleted = index.data(Qt::UserRole).toBool();
     if (isCompleted)
     {
         QRect checkboxRect(option.rect.right() - 30, option.rect.top() + 5, 20, 20);
         painter->drawText(checkboxRect, Qt::AlignCenter, "✓");
     }
-    // Restaurer l'état
     painter->restore();
 }
 
