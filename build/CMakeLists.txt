@@ -8,13 +8,16 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
 set(CMAKE_AUTOMOC ON)
-set(Qt6_DIR "C:/Qt/6.11.0/mingw_64/lib/cmake/Qt6")
 
 find_package(Qt6 REQUIRED COMPONENTS Core Widgets)
 
+file(GLOB_RECURSE src "../src/*.cpp")
+file(GLOB_RECURSE include "../include/*.hpp")
+
 # 1️⃣ L'exécutable principal
 # Assure-toi que ce fichier a un "int main()"
-add_executable(unique_demo ../src/main.cpp ../src/MainWindow.cpp ../include/MainWindow.hpp)
+#add_executable(unique_demo ../src/main.cpp ../src/MainWindow.cpp ../include/MainWindow.hpp)
+add_executable(unique_demo ${src} ${include})
 
 # # 2️⃣ L'exécutable de test
 # # SI tu utilises QtTest, il faut lier les libs, sinon le main sera manquant !

@@ -1,4 +1,5 @@
 #include "../include/MainWindow.hpp"
+#include "../include/TaskDelegate.hpp"
 #include <QVBoxLayout>
 #include <QFile>
 
@@ -15,6 +16,7 @@ MainWindow::MainWindow()
     m_deleteButton = new QPushButton(QString("Supprimer"), this);
     m_deleteButton->setEnabled(false);
     m_listView = new QListView(this);
+    m_listView->setItemDelegate(new TaskDelegate(this));
     // set the double click action to edit the item
     // m_listView->setEditTriggers(QAbstractItemView::DoubleClicked);
     m_model = new QStringListModel(this);
