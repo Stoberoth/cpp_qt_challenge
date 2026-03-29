@@ -1,8 +1,9 @@
+#pragma once
+
 #include <QObject>
 #include <QWeakPointer>
 #include <QSharedPointer>
 #include <QDebug>
-#include <iostream>
 
 class Task : public QObject
 {
@@ -15,36 +16,33 @@ private:
     QWeakPointer<Task> m_next;
 
 public:
-    inline Task(QString name, bool completed = false)
-    {
-        this->m_name = name;
-        this->m_status = completed;
-    }
-    inline ~Task()
+    Task(const QString& name, bool completed = false): m_name(name), m_status(completed)
+    {}
+     ~Task()
     {
         qDebug() << "Destruction de :" << m_name;
     }
 
-    inline QString name()
+    QString name()
     {
-        return this->m_name;
+        return m_name;
     }
 
-    inline bool isCompleted()
+    bool isCompleted()
     {
-        return this->m_status;
+        return m_status;
     }
-    inline void setCompleted(bool completed)
+    void setCompleted(bool completed)
     {
-        this->m_status = completed;
+        m_status = completed;
         emit statusChanged(this->m_name, this->m_status); 
     }
 
-    inline void setNext(QSharedPointer<Task> next)
+    void setNext(const QSharedPointer<Task>& next)
     {
         m_next = next;
     }
-    inline QWeakPointer<Task> next()
+    QWeakPointer<Task> next()
     {
         return m_next;
     }

@@ -14,22 +14,22 @@ find_package(Qt6 REQUIRED COMPONENTS Core Widgets)
 
 # 1️⃣ L'exécutable principal
 # Assure-toi que ce fichier a un "int main()"
-add_executable(unique_demo ../src/main.cpp ../include/Task.hpp ../include/MainWindow.hpp ../src/MainWindow.cpp)
+add_executable(unique_demo ../src/main.cpp ../src/MainWindow.cpp ../include/MainWindow.hpp)
 
-# 2️⃣ L'exécutable de test
-# SI tu utilises QtTest, il faut lier les libs, sinon le main sera manquant !
-add_executable(uniqueptr_test ../tests/uniqueptr_test.cpp)
+# # 2️⃣ L'exécutable de test
+# # SI tu utilises QtTest, il faut lier les libs, sinon le main sera manquant !
+# add_executable(uniqueptr_test ../tests/uniqueptr_test.cpp)
 
 
 target_link_libraries(unique_demo PRIVATE Qt6::Core Qt6::Widgets)
-target_link_libraries(unique_demo PRIVATE Qt6::Core)
+
 
 # --- Correction des flags (Windows / MSVC n'aime pas -Wall) ---
 if(MSVC)
     add_compile_options(/Zc:__cplusplus)
     target_compile_options(unique_demo PRIVATE /W4)
-    target_compile_options(uniqueptr_test PRIVATE /W4)
+    # target_compile_options(uniqueptr_test PRIVATE /W4)
 else()
     target_compile_options(unique_demo PRIVATE)
-    target_compile_options(uniqueptr_test PRIVATE)
+    # target_compile_options(uniqueptr_test PRIVATE)
 endif()
