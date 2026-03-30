@@ -2,7 +2,7 @@
 #include "../include/TaskDelegate.hpp"
 #include <QVBoxLayout>
 #include <QFile>
-#include <QDebug>
+
 
 
 MainWindow::MainWindow()

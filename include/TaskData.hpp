@@ -4,7 +4,7 @@
 #include <QDateTime>
 
 enum TaskRoles {
-    NameRole = Qt::DisplayRole,
+    NameRole = Qt::UserRole + 1,
     PriorityRole,
     DateRole
 };
