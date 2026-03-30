@@ -3,6 +3,7 @@
 #include <QVBoxLayout>
 #include <QFile>
 
+
 MainWindow::MainWindow()
 {
     QWidget *centralWidget = new QWidget(this);
@@ -19,8 +20,13 @@ MainWindow::MainWindow()
     m_listView->setItemDelegate(new TaskDelegate(this));
     // set the double click action to edit the item
     // m_listView->setEditTriggers(QAbstractItemView::DoubleClicked);
-    m_model = new QStringListModel(this);
-    m_listView->setModel(m_model);
+    m_taskModel = new TaskListModel(this);
+    TaskData td;
+    td.name = "test";
+    td.priority = 5;
+    m_taskModel->addTask(td);
+    
+    m_listView->setModel(m_taskModel);
     m_fileName = "todos.txt";
 
     QVBoxLayout *layout = new QVBoxLayout();
