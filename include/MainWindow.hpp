@@ -8,6 +8,7 @@
 #include <QStringListModel>
 #include <QListView>
 #include <QKeyEvent>
+#include "../include/TaskData.hpp"
 
 class MainWindow : public QMainWindow
 {
@@ -20,6 +21,8 @@ private:
     QPushButton *m_saveButton;
     QListView *m_listView;
     QStringListModel* m_model;
+    TaskListModel* m_taskModel;
+
     QString m_fileName;
 
     

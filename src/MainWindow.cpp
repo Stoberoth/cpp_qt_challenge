@@ -2,6 +2,8 @@
 #include "../include/TaskDelegate.hpp"
 #include <QVBoxLayout>
 #include <QFile>
+#include <QDebug>
+
 
 MainWindow::MainWindow()
 {
@@ -19,8 +21,9 @@ MainWindow::MainWindow()
     m_listView->setItemDelegate(new TaskDelegate(this));
     // set the double click action to edit the item
     // m_listView->setEditTriggers(QAbstractItemView::DoubleClicked);
-    m_model = new QStringListModel(this);
-    m_listView->setModel(m_model);
+    m_taskModel = new TaskListModel(this);
+    
+    m_listView->setModel(m_taskModel);
     m_fileName = "todos.txt";
 
     QVBoxLayout *layout = new QVBoxLayout();
@@ -47,52 +50,56 @@ MainWindow::~MainWindow()
 
 void MainWindow::getLineEditText()
 {
-    if (m_lineEdit->text() == "")
+    if(m_lineEdit->text() == "")
     {
         return;
     }
-    // on récupére l'existant
-    QStringList list = m_model->stringList();
-    // on ajoute la nouvelle entrés
-    list.append(m_lineEdit->text());
-    // on met a jour
-    m_model->setStringList(list);
+    TaskData td;
+    td.name = m_lineEdit->text();
+    td.priority = 1;
+    td.createdDate = QDateTime::currentDateTime();
+    m_taskModel->addTask(td);
     m_lineEdit->clear();
 }
 
 void MainWindow::saveTasks()
 {
     QFile saveFile(m_fileName);
-    if (saveFile.open(QIODevice::WriteOnly | QIODevice::Text))
+    if(saveFile.open(QIODevice::WriteOnly | QIODevice::Text))
     {
         QTextStream stream(&saveFile);
-        QStringList list = m_model->stringList();
-        for (const QString &line : list)
+        for(int i = 0; i < m_taskModel->rowCount(); ++i)
         {
-            stream << line << "\n";
+            stream << m_taskModel->data(m_taskModel->index(i), TaskRoles::NameRole).toString() << " " << m_taskModel->data(m_taskModel->index(i), TaskRoles::PriorityRole).toString() << " " << m_taskModel->data(m_taskModel->index(i), TaskRoles::DateRole).toDateTime().toString(Qt::ISODate) << "\n";
+            qDebug() << "save " << m_taskModel->data(m_taskModel->index(i), TaskRoles::NameRole).toString() << " " << m_taskModel->data(m_taskModel->index(i), TaskRoles::PriorityRole).toString() << " " << m_taskModel->data(m_taskModel->index(i), TaskRoles::DateRole).toDateTime().toString(Qt::ISODate).trimmed();
         }
         saveFile.close();
     }
+    
 }
 
 void MainWindow::loadTasks()
 {
-    QFile saveFile(m_fileName);
-    if (!saveFile.exists())
+    QFile loadFile(m_fileName);
+    if (!loadFile.exists())
     {
         return;
     }
-    if (saveFile.open(QIODevice::ReadOnly | QIODevice::Text))
+    if (loadFile.open(QIODevice::ReadOnly | QIODevice::Text))
     {
-        QTextStream stream(&saveFile);
+        QTextStream stream(&loadFile);
         QStringList tmpList;
         while (!stream.atEnd())
         {
-            tmpList.append(stream.readLine());
+            auto datas = stream.readLine().split(" ");
+            TaskData td;
+            td.name = datas[0];
+            td.priority = datas[1].toInt();
+            td.createdDate = QDateTime::fromString(datas[2].trimmed(), Qt::ISODate);
+            qDebug() << "load " << td.name << " " << td.priority << " " << td.createdDate.toString(Qt::ISODate);
+            m_taskModel->addTask(td);
         }
-        m_model->setStringList(tmpList);
-
-        saveFile.close();
+        loadFile.close();
     }
 }
 
@@ -101,7 +108,7 @@ void MainWindow::deleteSelectedTask()
     QModelIndex selectedIndex = m_listView->currentIndex();
     if (selectedIndex.isValid())
     {
-        m_model->removeRows(selectedIndex.row(), 1);
+        m_taskModel->removeRows(selectedIndex.row(), 1);
         m_deleteButton->setEnabled(m_listView->currentIndex().isValid());
     }
 }
