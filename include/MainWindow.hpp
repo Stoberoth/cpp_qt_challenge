@@ -9,6 +9,9 @@
 #include <QListView>
 #include <QKeyEvent>
 #include "../include/TaskData.hpp"
+#include "../include/DataLoader.hpp"
+#include <QThread>
+#include <QProgressBar>
 
 class MainWindow : public QMainWindow
 {
@@ -21,9 +24,16 @@ private:
     QPushButton *m_saveButton;
     QPushButton *m_ascendingButton;
     QPushButton *m_descendingButton;
+    QPushButton *m_loadButton;
     QListView *m_listView;
     QSortFilterProxyModel* m_model;
     TaskListModel* m_taskModel;
+
+    QThread* m_thread;
+
+    DataLoader* m_dataLoader;
+
+    QProgressBar* m_progressBar;
 
     QString m_fileName;
 

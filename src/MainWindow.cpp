@@ -12,13 +12,22 @@ MainWindow::MainWindow()
     setCentralWidget(centralWidget);
 
     this->setWindowTitle(QString("Todo List"));
-
+    
     m_lineEdit = new QLineEdit(this);
     m_pushButton = new QPushButton(QString("Ajouter"), this);
     m_saveButton = new QPushButton(QString("Sauvegarder"), this);
     m_deleteButton = new QPushButton(QString("Supprimer"), this);
     m_ascendingButton = new QPushButton(QString("Ordre croissant"), this);
     m_descendingButton = new QPushButton(QString("Ordre descroissant"), this);
+    m_loadButton = new QPushButton(QString("Load Data"), this);
+
+    m_thread = new QThread(this);
+    m_dataLoader = new DataLoader();
+
+    m_progressBar = new QProgressBar(this);
+
+    m_dataLoader->moveToThread(m_thread);
+
     m_deleteButton->setEnabled(false);
     m_listView = new QListView(this);
     m_listView->setItemDelegate(new TaskDelegate(this));
@@ -41,22 +50,24 @@ MainWindow::MainWindow()
     layout->addWidget(m_pushButton);
     layout->addWidget(m_listView);
     layout->addWidget(m_saveButton);
+    layout->addWidget(m_loadButton);
     layout->addWidget(m_deleteButton);
     layout->addWidget(m_ascendingButton);
     layout->addWidget(m_descendingButton);
+    layout->addWidget(m_progressBar);
     centralWidget->setLayout(layout);
 
-    loadTasks();
+    //loadTasks();
 
     connect(m_pushButton, &QPushButton::clicked, this, &MainWindow::getLineEditText);
     connect(m_saveButton, &QPushButton::clicked, this, &MainWindow::saveTasks);
     connect(m_deleteButton, &QPushButton::clicked, this, &MainWindow::deleteSelectedTask);
     connect(m_ascendingButton, &QPushButton::clicked, this, [this](){
         filterOrder(true);
-    }, Qt::UniqueConnection);
+    });
     connect(m_descendingButton, &QPushButton::clicked, this, [this](){
         filterOrder(false);
-    }, Qt::UniqueConnection);
+    });
     connect(m_listView->selectionModel(), &QItemSelectionModel::currentChanged, this, [this](const QModelIndex current)
             { m_deleteButton->setEnabled(current.isValid()); });
     connect(m_taskModel, &TaskListModel::taskAdded, this, [this](int index, const QString& name) {
@@ -64,6 +75,19 @@ MainWindow::MainWindow()
     });
     connect(m_taskModel, &TaskListModel::taskRemoved, this, [this](int index) {
         statusBar()->showMessage(QString("Removed: row number %1").arg(index));
+    });
+    connect(m_thread, QThread::started, m_dataLoader, &DataLoader::loadData);
+
+    connect(m_dataLoader, &DataLoader::progressUpdated, m_progressBar, &QProgressBar::setValue);
+    connect(m_dataLoader, &DataLoader::dataLoaded, this, &MainWindow::loadTasks);
+    connect(m_dataLoader, &DataLoader::dataLoaded, m_thread, &QThread::quit);
+
+    connect(m_loadButton, &QPushButton::clicked, m_thread, [this](){
+        if(m_thread->isRunning())
+        {
+            return;
+        }
+        m_thread->start();
     });
 }
 
@@ -77,6 +101,10 @@ MainWindow::~MainWindow()
     disconnect(m_listView->selectionModel(), &QItemSelectionModel::currentChanged, this, nullptr);
     disconnect(m_taskModel, &TaskListModel::taskAdded, this, nullptr);
     disconnect(m_taskModel, &TaskListModel::taskRemoved, this, nullptr);
+    m_thread->quit();
+    m_thread->wait();
+    delete m_dataLoader;
+    
     saveTasks();
 }
 
@@ -119,6 +147,7 @@ void MainWindow::loadTasks()
     }
     if (loadFile.open(QIODevice::ReadOnly | QIODevice::Text))
     {
+        m_taskModel->removeRows(0, m_taskModel->rowCount());
         QTextStream stream(&loadFile);
         QStringList tmpList;
         while (!stream.atEnd())
