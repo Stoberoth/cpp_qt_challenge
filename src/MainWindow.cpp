@@ -2,6 +2,7 @@
 #include "../include/TaskDelegate.hpp"
 #include <QVBoxLayout>
 #include <QFile>
+#include <QStatusBar>
 
 
 
@@ -16,14 +17,23 @@ MainWindow::MainWindow()
     m_pushButton = new QPushButton(QString("Ajouter"), this);
     m_saveButton = new QPushButton(QString("Sauvegarder"), this);
     m_deleteButton = new QPushButton(QString("Supprimer"), this);
+    m_ascendingButton = new QPushButton(QString("Ordre croissant"), this);
+    m_descendingButton = new QPushButton(QString("Ordre descroissant"), this);
     m_deleteButton->setEnabled(false);
     m_listView = new QListView(this);
     m_listView->setItemDelegate(new TaskDelegate(this));
     // set the double click action to edit the item
     // m_listView->setEditTriggers(QAbstractItemView::DoubleClicked);
     m_taskModel = new TaskListModel(this);
-    
-    m_listView->setModel(m_taskModel);
+    m_model = new QSortFilterProxyModel(this);
+    m_listView->setModel(m_model);
+
+    m_model->setSourceModel(m_taskModel);
+    // Indiquer quel rôle utiliser pour le tri/filtre
+    m_model->setFilterRole(TaskRoles::NameRole);
+    m_model->setSortRole(TaskRoles::NameRole);
+    m_model->sort(0, Qt::DescendingOrder);
+
     m_fileName = "todos.txt";
 
     QVBoxLayout *layout = new QVBoxLayout();
@@ -32,6 +42,8 @@ MainWindow::MainWindow()
     layout->addWidget(m_listView);
     layout->addWidget(m_saveButton);
     layout->addWidget(m_deleteButton);
+    layout->addWidget(m_ascendingButton);
+    layout->addWidget(m_descendingButton);
     centralWidget->setLayout(layout);
 
     loadTasks();
@@ -39,12 +51,32 @@ MainWindow::MainWindow()
     connect(m_pushButton, &QPushButton::clicked, this, &MainWindow::getLineEditText);
     connect(m_saveButton, &QPushButton::clicked, this, &MainWindow::saveTasks);
     connect(m_deleteButton, &QPushButton::clicked, this, &MainWindow::deleteSelectedTask);
+    connect(m_ascendingButton, &QPushButton::clicked, this, [this](){
+        filterOrder(true);
+    }, Qt::UniqueConnection);
+    connect(m_descendingButton, &QPushButton::clicked, this, [this](){
+        filterOrder(false);
+    }, Qt::UniqueConnection);
     connect(m_listView->selectionModel(), &QItemSelectionModel::currentChanged, this, [this](const QModelIndex current)
             { m_deleteButton->setEnabled(current.isValid()); });
+    connect(m_taskModel, &TaskListModel::taskAdded, this, [this](int index, const QString& name) {
+        statusBar()->showMessage(QString("Added: %1").arg(name));
+    });
+    connect(m_taskModel, &TaskListModel::taskRemoved, this, [this](int index) {
+        statusBar()->showMessage(QString("Removed: row number %1").arg(index));
+    });
 }
 
 MainWindow::~MainWindow()
 {
+    disconnect(m_pushButton, &QPushButton::clicked, this, nullptr);
+    disconnect(m_saveButton, &QPushButton::clicked, this, nullptr);
+    disconnect(m_deleteButton, &QPushButton::clicked, this, nullptr);
+    disconnect(m_ascendingButton, &QPushButton::clicked, this, nullptr);
+    disconnect(m_descendingButton, &QPushButton::clicked, this, nullptr);
+    disconnect(m_listView->selectionModel(), &QItemSelectionModel::currentChanged, this, nullptr);
+    disconnect(m_taskModel, &TaskListModel::taskAdded, this, nullptr);
+    disconnect(m_taskModel, &TaskListModel::taskRemoved, this, nullptr);
     saveTasks();
 }
 
@@ -107,8 +139,10 @@ void MainWindow::deleteSelectedTask()
 {
     QModelIndex selectedIndex = m_listView->currentIndex();
     if (selectedIndex.isValid())
-    {
-        m_taskModel->removeRows(selectedIndex.row(), 1);
+    {   
+        // on map l'index proxy avec le vrai index du model de référence
+        QModelIndex source = m_model->mapToSource(selectedIndex);
+        m_taskModel->removeRows(source.row(), 1);
         m_deleteButton->setEnabled(m_listView->currentIndex().isValid());
     }
 }
@@ -122,5 +156,17 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
     else
     {
         QMainWindow::keyPressEvent(event);
+    }
+}
+
+void MainWindow::filterOrder(bool ascending)
+{
+    if(ascending)
+    {
+        m_model->sort(0,Qt::AscendingOrder);
+    }
+    else
+    {
+        m_model->sort(0,Qt::DescendingOrder);
     }
 }

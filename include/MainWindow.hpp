@@ -5,7 +5,7 @@
 #include <QWidget>
 #include <QLineEdit>
 #include <QPushButton>
-#include <QStringListModel>
+#include <QSortFilterProxyModel>
 #include <QListView>
 #include <QKeyEvent>
 #include "../include/TaskData.hpp"
@@ -19,8 +19,10 @@ private:
     QPushButton *m_pushButton;
     QPushButton *m_deleteButton;
     QPushButton *m_saveButton;
+    QPushButton *m_ascendingButton;
+    QPushButton *m_descendingButton;
     QListView *m_listView;
-    QStringListModel* m_model;
+    QSortFilterProxyModel* m_model;
     TaskListModel* m_taskModel;
 
     QString m_fileName;
@@ -34,6 +36,7 @@ private slots:
     void loadTasks();
     void getLineEditText();
     void deleteSelectedTask();
+    void filterOrder(bool ascending);
 
 
 public:

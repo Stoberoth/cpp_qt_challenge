@@ -27,10 +27,15 @@ class TaskListModel : public QAbstractListModel
 
         bool insertRows(int row, int count, const QModelIndex& parent = QModelIndex()) override;
         bool removeRows(int row, int count, const QModelIndex& parent = QModelIndex()) override;
-
+    public slots:
         void addTask(const TaskData& task);
     private:
 
         QVector<TaskData> m_task;
+
+    signals:
+        void taskAdded(int index, const QString& name);
+        void taskRemoved(int index);
+        void taskPriorityChanged(int index, int newPriority);
 
 };

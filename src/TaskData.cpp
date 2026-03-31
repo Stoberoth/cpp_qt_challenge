@@ -52,8 +52,9 @@ bool TaskListModel::removeRows(int row, int count, const QModelIndex& parent)
     }
     // on dis que l'on veut surpprimer count lignes depuis row
     beginRemoveRows(parent, row, row + count - 1);
-
+    
     m_task.remove(row, count);
+    emit taskRemoved(row);
 
     endRemoveRows();
     return true;
@@ -63,4 +64,5 @@ void TaskListModel::addTask(const TaskData& task)
 {
     insertRows(m_task.size(), 1);       // insère une ligne vide à la fin
     m_task[m_task.size() - 1] = task;  // remplit avec les données
+    emit taskAdded(m_task.size() - 1, task.name);
 }
