@@ -3,6 +3,9 @@
 #include <QVBoxLayout>
 #include <QFile>
 #include <QStatusBar>
+#include <iostream>
+#include <QUrl>
+#include <QPointer>
 
 
 
@@ -23,6 +26,18 @@ MainWindow::MainWindow()
 
     m_thread = new QThread(this);
     m_dataLoader = new DataLoader();
+
+    m_loadingLabel = new QLabel("Chargement ...", this);
+    m_loadingLabel->setAlignment(Qt::AlignCenter);
+    m_loadingLabel->setStyleSheet("color: orange; font-weight: bold;");
+    m_loadingLabel->hide();
+
+    m_timeoutTimer = new QTimer(this);
+    m_timeoutTimer->setSingleShot(true);
+    m_timeoutTimer->setInterval(5000);
+
+    // manage the http request
+    m_networkManager = new QNetworkAccessManager(this);
 
     m_progressBar = new QProgressBar(this);
 
@@ -55,6 +70,7 @@ MainWindow::MainWindow()
     layout->addWidget(m_ascendingButton);
     layout->addWidget(m_descendingButton);
     layout->addWidget(m_progressBar);
+    layout->addWidget(m_loadingLabel);
     centralWidget->setLayout(layout);
 
     //loadTasks();
@@ -89,6 +105,9 @@ MainWindow::MainWindow()
         }
         m_thread->start();
     });
+
+
+    fetchTasksFromServer();
 }
 
 MainWindow::~MainWindow()
@@ -106,6 +125,48 @@ MainWindow::~MainWindow()
     delete m_dataLoader;
     
     saveTasks();
+}
+
+void MainWindow::fetchTasksFromServer()
+{
+    QNetworkRequest request(QUrl(QString("https://jsonplaceholder.typicode.com/todos")));
+    m_loadingLabel->show();
+    m_timeoutTimer->start();
+    QNetworkReply* reply = m_networkManager->get(request);
+
+    // on créer un observer pour vérifier que le pointer existe encore dans le cas ou les requêtes partirais de manière trop proche
+    QPointer<QNetworkReply> safeReply = reply;
+
+    // évite multiple connection avec des reply qui n'existe plus
+    m_timeoutTimer->disconnect();
+    
+    connect(reply, &QNetworkReply::finished, this, [this, reply](){
+        m_timeoutTimer->stop();
+        parseReply(reply);
+        reply->deleteLater();
+    });
+
+    connect(m_timeoutTimer, &QTimer::timeout, this, [this, safeReply]() {
+        if(safeReply){
+            safeReply->abort();
+            m_loadingLabel->setText("Timeout — serveur trop long");
+        }
+    });
+
+    
+}
+
+void MainWindow::parseReply(QNetworkReply* reply)
+{
+    
+    if(reply->error() != 0)
+    {
+        std::cout << "erreur" << std::endl;
+        return;
+    }
+    m_loadingLabel->hide();
+    std::cout << "readin ..." << std::endl;
+    std::cout << QString(reply->readAll()).toStdString() << std::endl;
 }
 
 void MainWindow::getLineEditText()
