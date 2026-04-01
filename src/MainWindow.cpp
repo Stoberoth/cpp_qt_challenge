@@ -6,6 +6,9 @@
 #include <iostream>
 #include <QUrl>
 #include <QPointer>
+#include <QJsonDocument>
+#include <QJsonArray>
+#include <QJsonObject>
 
 
 
@@ -107,7 +110,7 @@ MainWindow::MainWindow()
     });
 
 
-    fetchTasksFromServer();
+    //fetchTasksFromServer();
 }
 
 MainWindow::~MainWindow()
@@ -165,8 +168,18 @@ void MainWindow::parseReply(QNetworkReply* reply)
         return;
     }
     m_loadingLabel->hide();
-    std::cout << "readin ..." << std::endl;
-    std::cout << QString(reply->readAll()).toStdString() << std::endl;
+    QJsonDocument doc = QJsonDocument::fromJson(reply->readAll());
+    QJsonArray dataArray = doc.array();
+    for(QJsonValue value : dataArray)
+    {
+        QJsonObject obj = value.toObject();
+        QString title = obj["title"].toString();
+        TaskData td;
+        td.name = title;
+        td.priority = 1;
+        m_taskModel->addTask(td);
+    }
+    
 }
 
 void MainWindow::getLineEditText()
@@ -185,6 +198,7 @@ void MainWindow::getLineEditText()
 
 void MainWindow::saveTasks()
 {
+    /*
     QFile saveFile(m_fileName);
     if(saveFile.open(QIODevice::WriteOnly | QIODevice::Text))
     {
@@ -196,12 +210,13 @@ void MainWindow::saveTasks()
         }
         saveFile.close();
     }
-    
+    */
+    m_taskModel->saveTasksToJson();
 }
 
 void MainWindow::loadTasks()
 {
-    QFile loadFile(m_fileName);
+    /*QFile loadFile(m_fileName);
     if (!loadFile.exists())
     {
         return;
@@ -222,7 +237,8 @@ void MainWindow::loadTasks()
             m_taskModel->addTask(td);
         }
         loadFile.close();
-    }
+    }*/
+    m_taskModel->loadTaskFromJson();
 }
 
 void MainWindow::deleteSelectedTask()

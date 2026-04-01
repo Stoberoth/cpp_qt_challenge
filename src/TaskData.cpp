@@ -1,4 +1,9 @@
 #include "../include/TaskData.hpp"
+#include <QJsonArray>
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QFile>
+#include <QDebug>
 
 TaskListModel::TaskListModel(QObject* parent) : QAbstractListModel(parent){}
 
@@ -65,4 +70,71 @@ void TaskListModel::addTask(const TaskData& task)
     insertRows(m_task.size(), 1);       // insère une ligne vide à la fin
     m_task[m_task.size() - 1] = task;  // remplit avec les données
     emit taskAdded(m_task.size() - 1, task.name);
+}
+
+
+void TaskListModel::saveTasksToJson()
+{
+    QJsonArray taskArray;
+    for(TaskData td : m_task)
+    {
+        QJsonObject taskObj;
+        taskObj["name"] = td.name;
+        taskObj["priority"] = td.priority;
+        taskObj["createdDate"] = td.createdDate.toString();
+        taskArray.push_back(taskObj);
+    }
+
+    QJsonDocument doc(taskArray);
+    QFile file("json.txt");
+    if (file.open(QIODevice::WriteOnly | QIODevice::Text))
+    {
+        file.write(doc.toJson(QJsonDocument::Indented));
+    }
+    file.close();
+}
+
+void TaskListModel::loadTaskFromJson()
+{
+    QFile file("json.txt");
+    if(!file.exists() || !file.open(QIODevice::ReadOnly | QIODevice::Text))
+    {
+        qWarning() << "Fichier Introuvable";
+        return;
+    }
+
+    QJsonParseError parseError;
+    QJsonDocument doc = QJsonDocument::fromJson(file.readAll());
+    file.close();
+
+    if (parseError.error != QJsonParseError::NoError)
+    {
+        qWarning() << "Erreur parsing :" << parseError.errorString(); 
+    }
+
+    if(!doc.isArray())
+    {
+        qWarning() << "JSON attendu : pas de tableau";
+        return;
+    }
+
+    for (const QJsonValue& val : doc.array())
+    {
+        if(!val.isObject()) continue;
+        QJsonObject obj = val.toObject();
+
+        if (!obj.contains("name") || !obj.contains("priority") || !obj.contains("createdDate"))
+        {
+            qWarning() << "Objet incomplet dans le fichier, objet ignoré";
+            continue;
+        }
+
+        TaskData td;
+        td.name = obj["name"].toString();
+        td.priority = obj["priority"].toInt();
+        td.createdDate = QDateTime::fromString(obj["createdDate"].toString(),Qt::ISODate);
+        addTask(td);
+    }
+
+
 }

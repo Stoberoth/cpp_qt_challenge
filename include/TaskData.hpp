@@ -27,6 +27,9 @@ class TaskListModel : public QAbstractListModel
 
         bool insertRows(int row, int count, const QModelIndex& parent = QModelIndex()) override;
         bool removeRows(int row, int count, const QModelIndex& parent = QModelIndex()) override;
+
+        void saveTasksToJson();
+        void loadTaskFromJson();
     public slots:
         void addTask(const TaskData& task);
     private:
