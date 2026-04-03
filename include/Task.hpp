@@ -1,24 +1,25 @@
 #pragma once
 
-#include <QObject>
-#include <QWeakPointer>
-#include <QSharedPointer>
 #include <QDebug>
+#include <QObject>
+#include <QSharedPointer>
+#include <QWeakPointer>
+
 
 class Task : public QObject
 {
-
     Q_OBJECT
 
-private:
+   private:
     QString m_name;
     bool m_status;
     QWeakPointer<Task> m_next;
 
-public:
-    Task(const QString& name, bool completed = false): m_name(name), m_status(completed)
-    {}
-     ~Task()
+   public:
+    Task(const QString& name, bool completed = false) : m_name(name), m_status(completed)
+    {
+    }
+    ~Task()
     {
         qDebug() << "Destruction de :" << m_name;
     }
@@ -35,7 +36,7 @@ public:
     void setCompleted(bool completed)
     {
         m_status = completed;
-        emit statusChanged(this->m_name, this->m_status); 
+        emit statusChanged(this->m_name, this->m_status);
     }
 
     void setNext(const QSharedPointer<Task>& next)
@@ -47,6 +48,6 @@ public:
         return m_next;
     }
 
-signals:
-    void statusChanged(const QString &taskName, bool isCompleted);
+   signals:
+    void statusChanged(const QString& taskName, bool isCompleted);
 };

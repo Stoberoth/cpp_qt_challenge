@@ -6,13 +6,12 @@ class DataLoader : public QObject
 {
     Q_OBJECT
 
-    public:
+   public:
     DataLoader(QObject* parent = nullptr);
-    public slots:
+   public slots:
     void loadData();
-    
-    signals:
-    void progressUpdated(int percent);
-    void dataLoaded(const QStringList &data);
 
+   signals:
+    void progressUpdated(int percent);
+    void dataLoaded(const QStringList& data);
 };

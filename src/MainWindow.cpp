@@ -1,28 +1,26 @@
 #include "../include/MainWindow.hpp"
-#include "../include/TaskDelegate.hpp"
-#include <QVBoxLayout>
+
 #include <QFile>
+#include <QJsonArray>
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QPointer>
 #include <QStatusBar>
 #include <QUrl>
-#include <QPointer>
-#include <QJsonDocument>
-#include <QJsonArray>
-#include <QJsonObject>
+#include <QVBoxLayout>
 
-
+#include "../include/TaskDelegate.hpp"
 
 MainWindow::MainWindow()
 {
-    
-
     this->setWindowTitle(QString("Todo List"));
-    
+
     this->setupWidgets();
     this->setupWorkers();
     this->setupModel();
     this->setupConnections();
 
-    //fetchTasksFromServer();
+    // fetchTasksFromServer();
 }
 
 MainWindow::~MainWindow()
@@ -39,14 +37,13 @@ MainWindow::~MainWindow()
     m_thread->wait();
 
     delete m_dataLoader;
-    
+
     saveTasks();
 }
 
 void MainWindow::setupWidgets()
 {
-
-    QWidget *centralWidget = new QWidget(this);
+    QWidget* centralWidget = new QWidget(this);
     setCentralWidget(centralWidget);
     m_lineEdit = new QLineEdit(this);
     m_pushButton = new QPushButton(QString("Ajouter"), this);
@@ -67,7 +64,7 @@ void MainWindow::setupWidgets()
     m_listView = new QListView(this);
     m_listView->setItemDelegate(new TaskDelegate(this));
 
-    QVBoxLayout *layout = new QVBoxLayout();
+    QVBoxLayout* layout = new QVBoxLayout();
     layout->addWidget(m_lineEdit);
     layout->addWidget(m_pushButton);
     layout->addWidget(m_listView);
@@ -82,7 +79,7 @@ void MainWindow::setupWidgets()
 }
 
 void MainWindow::setupWorkers()
-{   
+{
     m_thread = new QThread(this);
     m_dataLoader = new DataLoader();
 
@@ -93,7 +90,6 @@ void MainWindow::setupWorkers()
     m_networkManager = new QNetworkAccessManager(this);
 
     m_dataLoader->moveToThread(m_thread);
-
 }
 
 void MainWindow::setupModel()
@@ -114,33 +110,29 @@ void MainWindow::setupConnections()
     connect(m_pushButton, &QPushButton::clicked, this, &MainWindow::getLineEditText);
     connect(m_saveButton, &QPushButton::clicked, this, &MainWindow::saveTasks);
     connect(m_deleteButton, &QPushButton::clicked, this, &MainWindow::deleteSelectedTask);
-    connect(m_ascendingButton, &QPushButton::clicked, this, [this](){
-        filterOrder(true);
-    });
-    connect(m_descendingButton, &QPushButton::clicked, this, [this](){
-        filterOrder(false);
-    });
-    connect(m_listView->selectionModel(), &QItemSelectionModel::currentChanged, this, [this](const QModelIndex current)
-            { m_deleteButton->setEnabled(current.isValid()); });
-    connect(m_taskModel, &TaskListModel::taskAdded, this, [this](int index, const QString& name) {
-        statusBar()->showMessage(QString("Added: %1").arg(name));
-    });
-    connect(m_taskModel, &TaskListModel::taskRemoved, this, [this](int index) {
-        statusBar()->showMessage(QString("Removed: row number %1").arg(index));
-    });
-    connect(m_thread, QThread::started, m_dataLoader, &DataLoader::loadData);
+    connect(m_ascendingButton, &QPushButton::clicked, this, [this]() { filterOrder(true); });
+    connect(m_descendingButton, &QPushButton::clicked, this, [this]() { filterOrder(false); });
+    connect(m_listView->selectionModel(), &QItemSelectionModel::currentChanged, this,
+            [this](const QModelIndex current) { m_deleteButton->setEnabled(current.isValid()); });
+    connect(m_taskModel, &TaskListModel::taskAdded, this,
+            [this](int index, const QString& name) { statusBar()->showMessage(QString("Added: %1").arg(name)); });
+    connect(m_taskModel, &TaskListModel::taskRemoved, this,
+            [this](int index) { statusBar()->showMessage(QString("Removed: row number %1").arg(index)); });
+    connect(m_thread, &QThread::started, m_dataLoader, &DataLoader::loadData);
 
     connect(m_dataLoader, &DataLoader::progressUpdated, m_progressBar, &QProgressBar::setValue);
     connect(m_dataLoader, &DataLoader::dataLoaded, this, &MainWindow::loadTasks);
     connect(m_dataLoader, &DataLoader::dataLoaded, m_thread, &QThread::quit);
 
-    connect(m_loadButton, &QPushButton::clicked, m_thread, [this](){
-        if(m_thread->isRunning())
-        {
-            return;
-        }
-        m_thread->start();
-    });
+    connect(m_loadButton, &QPushButton::clicked, m_thread,
+            [this]()
+            {
+                if (m_thread->isRunning())
+                {
+                    return;
+                }
+                m_thread->start();
+            });
 }
 
 void MainWindow::fetchTasksFromServer()
@@ -150,32 +142,35 @@ void MainWindow::fetchTasksFromServer()
     m_timeoutTimer->start();
     QNetworkReply* reply = m_networkManager->get(request);
 
-    // on créer un observer pour vérifier que le pointer existe encore dans le cas ou les requêtes partirais de manière trop proche
+    // on créer un observer pour vérifier que le pointer existe encore dans le cas ou les requêtes partirais de manière
+    // trop proche
     QPointer<QNetworkReply> safeReply = reply;
 
     // évite multiple connection avec des reply qui n'existe plus
     m_timeoutTimer->disconnect();
-    
-    connect(reply, &QNetworkReply::finished, this, [this, reply](){
-        m_timeoutTimer->stop();
-        parseReply(reply);
-        reply->deleteLater();
-    });
 
-    connect(m_timeoutTimer, &QTimer::timeout, this, [this, safeReply]() {
-        if(safeReply){
-            safeReply->abort();
-            m_loadingLabel->setText("Timeout — serveur trop long");
-        }
-    });
+    connect(reply, &QNetworkReply::finished, this,
+            [this, reply]()
+            {
+                m_timeoutTimer->stop();
+                parseReply(reply);
+                reply->deleteLater();
+            });
 
-    
+    connect(m_timeoutTimer, &QTimer::timeout, this,
+            [this, safeReply]()
+            {
+                if (safeReply)
+                {
+                    safeReply->abort();
+                    m_loadingLabel->setText("Timeout — serveur trop long");
+                }
+            });
 }
 
 void MainWindow::parseReply(QNetworkReply* reply)
 {
-    
-    if(reply->error() != 0)
+    if (reply->error() != 0)
     {
         qWarning() << "Parsing Error";
         return;
@@ -183,7 +178,7 @@ void MainWindow::parseReply(QNetworkReply* reply)
     m_loadingLabel->hide();
     QJsonDocument doc = QJsonDocument::fromJson(reply->readAll());
     QJsonArray dataArray = doc.array();
-    for(QJsonValue value : dataArray)
+    for (QJsonValue value : dataArray)
     {
         QJsonObject obj = value.toObject();
         QString title = obj["title"].toString();
@@ -193,12 +188,11 @@ void MainWindow::parseReply(QNetworkReply* reply)
         td.completed = obj["completed"].toBool();
         m_taskModel->addTask(td);
     }
-    
 }
 
 void MainWindow::getLineEditText()
 {
-    if(m_lineEdit->text() == "")
+    if (m_lineEdit->text() == "")
     {
         return;
     }
@@ -225,7 +219,7 @@ void MainWindow::deleteSelectedTask()
 {
     QModelIndex selectedIndex = m_listView->currentIndex();
     if (selectedIndex.isValid())
-    {   
+    {
         // on map l'index proxy avec le vrai index du model de référence
         QModelIndex source = m_model->mapToSource(selectedIndex);
         m_taskModel->removeRows(source.row(), 1);
@@ -233,7 +227,7 @@ void MainWindow::deleteSelectedTask()
     }
 }
 
-void MainWindow::keyPressEvent(QKeyEvent *event)
+void MainWindow::keyPressEvent(QKeyEvent* event)
 {
     if (event->key() == Qt::Key_Delete)
     {
@@ -247,12 +241,12 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
 
 void MainWindow::filterOrder(bool ascending)
 {
-    if(ascending)
+    if (ascending)
     {
-        m_model->sort(0,Qt::AscendingOrder);
+        m_model->sort(0, Qt::AscendingOrder);
     }
     else
     {
-        m_model->sort(0,Qt::DescendingOrder);
+        m_model->sort(0, Qt::DescendingOrder);
     }
 }
