@@ -1,10 +1,19 @@
 #include "../include/MainWindow.hpp"
 
+#include <qabstractitemmodel.h>
+#include <qdatetime.h>
+#include <qlogging.h>
+#include <qnamespace.h>
+#include <qsqldatabase.h>
+#include <qsqlerror.h>
+#include <qsqlquery.h>
+
 #include <QFile>
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QPointer>
+#include <QSql>
 #include <QStatusBar>
 #include <QUrl>
 #include <QVBoxLayout>
@@ -14,11 +23,12 @@
 MainWindow::MainWindow()
 {
     this->setWindowTitle(QString("Todo List"));
-
     this->setupWidgets();
     this->setupWorkers();
     this->setupModel();
     this->setupConnections();
+
+    qWarning() << createDatabase();
 
     // fetchTasksFromServer();
 }
@@ -135,6 +145,108 @@ void MainWindow::setupConnections()
             });
 }
 
+bool MainWindow::createDatabase()
+{
+    QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE");
+    db.setDatabaseName("tasks.db");
+    if (!db.open())
+    {
+        qWarning() << "Database not open";
+        return false;
+    }
+    QSqlQuery query;
+    query.exec(
+        "CREATE TABLE IF NOT EXISTS tasks ("
+        "id INTEGER PRIMARY KEY AUTOINCREMENT,"
+        "name TEXT NOT NULL,"
+        "priority INTEGER DEFAULT 0,"
+        "createdDate TEXT,"
+        "completed INTEGER DEFAULT 0)");
+    return true;
+}
+
+void MainWindow::createTaskInDatabase(TaskData& td)
+{
+    QSqlQuery query;
+    query.prepare(
+        "INSERT INTO tasks (name, priority, createdDate, completed) VALUES (:name, :priority, :createdDate, "
+        ":completed)");
+    query.bindValue(":name", td.name);
+    query.bindValue(":priority", td.priority);
+    query.bindValue(":createdDate", td.createdDate.toString(Qt::ISODate));
+    query.bindValue(":completed", td.completed ? 1 : 0);
+    if (!query.exec())
+    {
+        qWarning() << "INSERT fail :" << query.lastError().text();
+        return;
+    }
+    qWarning() << "INSERT success";
+    td.id = query.lastInsertId().toInt();
+}
+void MainWindow::getTasksInDatabase()
+{
+    QSqlQuery query("SELECT id, name, priority, createdDate, completed FROM tasks");
+    int count(0);
+    while (query.next())
+    {
+        TaskData td;
+        td.id = query.value("id").toInt();
+        td.name = query.value("name").toString();
+        td.priority = query.value("priority").toInt();
+        td.createdDate = QDateTime::fromString(query.value("createdDate").toString(), Qt::ISODate);
+        td.completed = query.value("completed").toBool();
+        m_taskModel->addTask(td);
+    }
+}
+void MainWindow::updateTasksInDatabase()
+{
+    QSqlQuery query;
+    query.prepare(
+        "UPDATE tasks SET name = :name, priority = :priority, createdDate = :createdDate, completed = :completed WHERE "
+        "id = :id");
+    auto& tasks = m_taskModel->getTasks();
+    for (const TaskData& td : tasks)
+    {
+        query.bindValue(":id", td.id);
+        query.bindValue(":name", td.name);
+        query.bindValue(":priority", td.priority);
+        query.bindValue(":createdDate", td.createdDate);
+        query.bindValue(":completed", td.completed ? 1 : 0);
+
+        if (!query.exec())
+        {
+            qWarning() << "UPDATE fail : " << query.lastError().text();
+        }
+        qWarning() << "UPDATE success";
+    }
+}
+void MainWindow::deleteTasksInDatabase()
+{
+    QModelIndex selectedIndex = m_listView->currentIndex();
+    if (!selectedIndex.isValid())
+        return;
+    QModelIndex source = m_model->mapToSource(selectedIndex);
+    TaskData& td = m_taskModel->getTasks()[source.row()];
+
+    if (td.id == -1)
+    {
+        m_taskModel->removeRows(source.row(), 1);
+        return;
+    }
+
+    QSqlQuery query;
+    query.prepare("DELETE FROM tasks WHERE id = :id");
+    query.bindValue(":id", td.id);
+
+    if (!query.exec())
+    {
+        qWarning() << "DELETE fail :" << query.lastError().text();
+        return;
+    }
+    qWarning() << "DELETE success";
+    m_taskModel->removeRows(source.row(), 1);
+}
+
 void MainWindow::fetchTasksFromServer()
 {
     QNetworkRequest request(QUrl(QString("https://jsonplaceholder.typicode.com/todos")));
@@ -207,12 +319,23 @@ void MainWindow::getLineEditText()
 void MainWindow::saveTasks()
 {
     m_taskModel->saveTasksToJson();
+    auto& tasks = m_taskModel->getTasks();
+    for (TaskData& td : tasks)
+    {
+        if (td.id == -1)
+            createTaskInDatabase(td);
+        else
+        {
+            updateTasksInDatabase();
+        }
+    }
 }
 
 void MainWindow::loadTasks()
 {
     m_taskModel->removeRows(0, m_taskModel->rowCount());
-    m_taskModel->loadTasksFromJson();
+    // m_taskModel->loadTasksFromJson();
+    getTasksInDatabase();
 }
 
 void MainWindow::deleteSelectedTask()
@@ -221,8 +344,7 @@ void MainWindow::deleteSelectedTask()
     if (selectedIndex.isValid())
     {
         // on map l'index proxy avec le vrai index du model de référence
-        QModelIndex source = m_model->mapToSource(selectedIndex);
-        m_taskModel->removeRows(source.row(), 1);
+        deleteTasksInDatabase();
         m_deleteButton->setEnabled(m_listView->currentIndex().isValid());
     }
 }

@@ -19,7 +19,6 @@
 #include "../include/DataLoader.hpp"
 #include "../include/TaskData.hpp"
 
-
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
@@ -54,6 +53,13 @@ class MainWindow : public QMainWindow
     void setupConnections();
     void keyPressEvent(QKeyEvent* event) override;
     void fetchTasksFromServer();
+
+    bool createDatabase();
+
+    void createTaskInDatabase(TaskData& td);
+    void getTasksInDatabase();
+    void updateTasksInDatabase();
+    void deleteTasksInDatabase();
 
    private slots:
 

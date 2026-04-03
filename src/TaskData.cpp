@@ -149,3 +149,8 @@ void TaskListModel::loadTasksFromJson()
         addTask(td);
     }
 }
+
+QVector<TaskData>& TaskListModel::getTasks()
+{
+    return m_task;
+}

@@ -9,7 +9,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
 set(CMAKE_AUTOMOC ON)
 
-find_package(Qt6 REQUIRED COMPONENTS Core Widgets Network)
+find_package(Qt6 REQUIRED COMPONENTS Core Widgets Network Sql)
 
 file(GLOB_RECURSE src "../src/*.cpp")
 file(GLOB_RECURSE include "../include/*.hpp")
@@ -24,7 +24,7 @@ add_executable(unique_demo ${src} ${include})
 # add_executable(uniqueptr_test ../tests/uniqueptr_test.cpp)
 
 
-target_link_libraries(unique_demo PRIVATE Qt6::Core Qt6::Widgets Qt6::Network)
+target_link_libraries(unique_demo PRIVATE Qt6::Core Qt6::Widgets Qt6::Network Qt6::Sql)
 
 
 # --- Correction des flags (Windows / MSVC n'aime pas -Wall) ---

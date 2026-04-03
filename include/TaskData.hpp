@@ -13,6 +13,7 @@ enum TaskRoles
 
 struct TaskData
 {
+    int id = -1;
     QString name;
     int priority = 0;
     QDateTime createdDate;
@@ -39,6 +40,9 @@ class TaskListModel : public QAbstractListModel
 
     void saveTasksToJson();
     void loadTasksFromJson();
+
+    QVector<TaskData>& getTasks();
+
    public slots:
     void addTask(const TaskData& task);
 
