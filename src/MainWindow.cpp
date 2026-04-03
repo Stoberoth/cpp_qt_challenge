@@ -1,10 +1,16 @@
 #include "../include/MainWindow.hpp"
 
+#include <qlogging.h>
+#include <qsqldatabase.h>
+#include <qsqlerror.h>
+#include <qsqlquery.h>
+
 #include <QFile>
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QPointer>
+#include <QSql>
 #include <QStatusBar>
 #include <QUrl>
 #include <QVBoxLayout>
@@ -19,6 +25,8 @@ MainWindow::MainWindow()
     this->setupWorkers();
     this->setupModel();
     this->setupConnections();
+
+    qWarning() << createDatabase();
 
     // fetchTasksFromServer();
 }
@@ -133,6 +141,24 @@ void MainWindow::setupConnections()
                 }
                 m_thread->start();
             });
+}
+
+bool MainWindow::createDatabase()
+{
+    QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE");
+    db.setDatabaseName("tasks.db");
+    if (!db.open())
+    {
+        qWarning() << "Database not open";
+        return false;
+    }
+    QSqlQuery query;
+    query.exec(
+        "CREATE TABLE IF NOT EXISTS tasks ("
+        "id INTEGER PRIMARY KEY AUTOINCREMENT,"
+        "name TEXT NOT NULL,"
+        "completed INTEGER DEFAULT 0)");
+    return true;
 }
 
 void MainWindow::fetchTasksFromServer()

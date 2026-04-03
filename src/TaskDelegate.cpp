@@ -1,14 +1,17 @@
 #include "../include/TaskDelegate.hpp"
-#include <QPainter>
-#include <QStyleOptionViewItem>
-#include <QModelIndex>
-#include <QStyle>
-#include <QDateTime>
-#include "../include/TaskData.hpp"
-#include <QDebug>
 
-TaskDelegate::TaskDelegate(QObject *parent)
-    : QStyledItemDelegate(parent) {}
+#include <QDateTime>
+#include <QDebug>
+#include <QModelIndex>
+#include <QPainter>
+#include <QStyle>
+#include <QStyleOptionViewItem>
+
+#include "../include/TaskData.hpp"
+
+TaskDelegate::TaskDelegate(QObject *parent) : QStyledItemDelegate(parent)
+{
+}
 
 void TaskDelegate::paint(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const
 {
@@ -46,7 +49,7 @@ void TaskDelegate::paint(QPainter *painter, const QStyleOptionViewItem &option, 
     painter->drawText(textRect, Qt::AlignLeft | Qt::AlignVCenter, text);
 
     bool isCompleted = index.data(TaskRoles::CompletedRole).toBool();
-    
+
     if (isCompleted)
     {
         QRect checkboxRect(option.rect.right() - 30, option.rect.top() + 5, 20, 20);
