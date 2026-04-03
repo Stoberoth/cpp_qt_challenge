@@ -1,36 +1,38 @@
 #pragma once
 
-#include <QObject>
-#include <QMainWindow>
-#include <QWidget>
+#include <QKeyEvent>
+#include <QLabel>
 #include <QLineEdit>
+#include <QListView>
+#include <QMainWindow>
+#include <QNetworkAccessManager>
+#include <QNetworkReply>
+#include <QNetworkRequest>
+#include <QObject>
+#include <QProgressBar>
 #include <QPushButton>
 #include <QSortFilterProxyModel>
-#include <QListView>
-#include <QKeyEvent>
-#include "../include/TaskData.hpp"
-#include "../include/DataLoader.hpp"
 #include <QThread>
-#include <QProgressBar>
-#include <QNetworkRequest>
-#include <QNetworkReply>
-#include <QNetworkAccessManager>
-#include <QLabel>
 #include <QTimer>
+#include <QWidget>
+
+#include "../include/DataLoader.hpp"
+#include "../include/TaskData.hpp"
+
 
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
 
-private:
-    QLineEdit *m_lineEdit;
-    QPushButton *m_pushButton;
-    QPushButton *m_deleteButton;
-    QPushButton *m_saveButton;
-    QPushButton *m_ascendingButton;
-    QPushButton *m_descendingButton;
-    QPushButton *m_loadButton;
-    QListView *m_listView;
+   private:
+    QLineEdit* m_lineEdit;
+    QPushButton* m_pushButton;
+    QPushButton* m_deleteButton;
+    QPushButton* m_saveButton;
+    QPushButton* m_ascendingButton;
+    QPushButton* m_descendingButton;
+    QPushButton* m_loadButton;
+    QListView* m_listView;
     QSortFilterProxyModel* m_model;
 
     QLabel* m_loadingLabel;
@@ -53,11 +55,8 @@ private:
     void keyPressEvent(QKeyEvent* event) override;
     void fetchTasksFromServer();
 
-    
-   
-private slots:
+   private slots:
 
-    
     void saveTasks();
     void loadTasks();
     void getLineEditText();
@@ -65,10 +64,7 @@ private slots:
     void filterOrder(bool ascending);
     void parseReply(QNetworkReply* reply);
 
-
-
-public:
+   public:
     MainWindow();
     ~MainWindow();
-
 };

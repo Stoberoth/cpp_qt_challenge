@@ -1,3 +1,20 @@
 {
-    "cmake.sourceDirectory": "C:/Users/nicol/Documents/cpp_qt/cpp_qt_challenge/build"
+    "cmake.sourceDirectory": "${workspaceFolder}/build",
+    "cmake.configureArgs": [
+        "-DCMAKE_PREFIX_PATH=C:/Qt/6.10.2/mingw_64",
+        "-DCMAKE_C_COMPILER=C:/Qt/Tools/mingw1310_64/bin/gcc.exe",
+        "-DCMAKE_CXX_COMPILER=C:/Qt/Tools/mingw1310_64/bin/g++.exe"
+    ],
+    "cmake.generator": "MinGW Makefiles",
+    "cmake.exportCompileCommandsFile": true,
+    "clangd.path": "C:/msys64/ucrt64/bin/clangd.exe",
+    "clang-format.executable": "C:/msys64/ucrt64/bin/clang-format.exe",
+    /*"clangd.arguments": [
+        "--compile-commands-dir=C:/Users/lenoip03/Documents/Perso/cpp_qt_challenge/build",
+        "--log=verbose"
+    ],*/
+    "[cpp]": {
+        "editor.defaultFormatter": "llvm-vs-code-extensions.vscode-clangd"
+    },
+    "editor.formatOnSave": true
 }

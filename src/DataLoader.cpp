@@ -1,7 +1,11 @@
 #include "../include/DataLoader.hpp"
+
 #include <QThread>
 
-DataLoader::DataLoader(QObject* parent) : QObject(parent){}
+
+DataLoader::DataLoader(QObject* parent) : QObject(parent)
+{
+}
 
 void DataLoader::loadData()
 {

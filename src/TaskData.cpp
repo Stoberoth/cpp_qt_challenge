@@ -1,11 +1,14 @@
 #include "../include/TaskData.hpp"
+
+#include <QDebug>
+#include <QFile>
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
-#include <QFile>
-#include <QDebug>
 
-TaskListModel::TaskListModel(QObject* parent) : QAbstractListModel(parent){}
+TaskListModel::TaskListModel(QObject* parent) : QAbstractListModel(parent)
+{
+}
 
 int TaskListModel::rowCount(const QModelIndex& parent) const
 {
@@ -18,12 +21,18 @@ QVariant TaskListModel::data(const QModelIndex& index, int role) const
     if (!index.isValid() || index.row() >= m_task.size())
         return QVariant();
     const TaskData& task = m_task.at(index.row());
-    switch (role) {
-        case NameRole:     return task.name;
-        case PriorityRole: return task.priority;
-        case DateRole:     return task.createdDate;
-        case CompletedRole: return task.completed;
-        default:           return QVariant();
+    switch (role)
+    {
+        case NameRole:
+            return task.name;
+        case PriorityRole:
+            return task.priority;
+        case DateRole:
+            return task.createdDate;
+        case CompletedRole:
+            return task.completed;
+        default:
+            return QVariant();
     }
 }
 Qt::ItemFlags TaskListModel::flags(const QModelIndex& index) const
@@ -35,7 +44,7 @@ Qt::ItemFlags TaskListModel::flags(const QModelIndex& index) const
 
 bool TaskListModel::insertRows(int row, int count, const QModelIndex& parent)
 {
-    if(row < 0 || row > m_task.size())
+    if (row < 0 || row > m_task.size())
     {
         return false;
     }
@@ -58,7 +67,7 @@ bool TaskListModel::removeRows(int row, int count, const QModelIndex& parent)
     }
     // on dis que l'on veut surpprimer count lignes depuis row
     beginRemoveRows(parent, row, row + count - 1);
-    
+
     m_task.remove(row, count);
     emit taskRemoved(row);
 
@@ -68,16 +77,15 @@ bool TaskListModel::removeRows(int row, int count, const QModelIndex& parent)
 
 void TaskListModel::addTask(const TaskData& task)
 {
-    insertRows(m_task.size(), 1);       // insère une ligne vide à la fin
+    insertRows(m_task.size(), 1);      // insère une ligne vide à la fin
     m_task[m_task.size() - 1] = task;  // remplit avec les données
     emit taskAdded(m_task.size() - 1, task.name);
 }
 
-
 void TaskListModel::saveTasksToJson()
 {
     QJsonArray taskArray;
-    for(TaskData td : m_task)
+    for (TaskData td : m_task)
     {
         QJsonObject taskObj;
         taskObj["name"] = td.name;
@@ -99,7 +107,7 @@ void TaskListModel::saveTasksToJson()
 void TaskListModel::loadTasksFromJson()
 {
     QFile file("json.txt");
-    if(!file.exists() || !file.open(QIODevice::ReadOnly | QIODevice::Text))
+    if (!file.exists() || !file.open(QIODevice::ReadOnly | QIODevice::Text))
     {
         qWarning() << "Fichier Introuvable";
         return;
@@ -111,10 +119,10 @@ void TaskListModel::loadTasksFromJson()
 
     if (parseError.error != QJsonParseError::NoError)
     {
-        qWarning() << "Erreur parsing :" << parseError.errorString(); 
+        qWarning() << "Erreur parsing :" << parseError.errorString();
     }
 
-    if(!doc.isArray())
+    if (!doc.isArray())
     {
         qWarning() << "JSON attendu : pas de tableau";
         return;
@@ -122,10 +130,12 @@ void TaskListModel::loadTasksFromJson()
 
     for (const QJsonValue& val : doc.array())
     {
-        if(!val.isObject()) continue;
+        if (!val.isObject())
+            continue;
         QJsonObject obj = val.toObject();
 
-        if (!obj.contains("name") || !obj.contains("priority") || !obj.contains("createdDate") || !obj.contains("completed"))
+        if (!obj.contains("name") || !obj.contains("priority") || !obj.contains("createdDate") ||
+            !obj.contains("completed"))
         {
             qWarning() << "Objet incomplet dans le fichier, objet ignoré";
             continue;
@@ -134,10 +144,8 @@ void TaskListModel::loadTasksFromJson()
         TaskData td;
         td.name = obj["name"].toString();
         td.priority = obj["priority"].toInt();
-        td.createdDate = QDateTime::fromString(obj["createdDate"].toString(),Qt::ISODate);
+        td.createdDate = QDateTime::fromString(obj["createdDate"].toString(), Qt::ISODate);
         td.completed = obj["completed"].toBool();
         addTask(td);
     }
-
-
 }
