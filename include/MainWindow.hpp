@@ -46,15 +46,18 @@ private:
 
     QProgressBar* m_progressBar;
 
-    QString m_fileName;
+    void setupWidgets();
+    void setupWorkers();
+    void setupModel();
+    void setupConnections();
+    void keyPressEvent(QKeyEvent* event) override;
+    void fetchTasksFromServer();
 
     
-
-    void keyPressEvent(QKeyEvent* event) override;
-
-    void fetchTasksFromServer();
    
 private slots:
+
+    
     void saveTasks();
     void loadTasks();
     void getLineEditText();

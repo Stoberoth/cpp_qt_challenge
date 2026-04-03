@@ -3,7 +3,6 @@
 #include <QVBoxLayout>
 #include <QFile>
 #include <QStatusBar>
-#include <iostream>
 #include <QUrl>
 #include <QPointer>
 #include <QJsonDocument>
@@ -14,11 +13,41 @@
 
 MainWindow::MainWindow()
 {
-    QWidget *centralWidget = new QWidget(this);
-    setCentralWidget(centralWidget);
+    
 
     this->setWindowTitle(QString("Todo List"));
     
+    this->setupWidgets();
+    this->setupWorkers();
+    this->setupModel();
+    this->setupConnections();
+
+    //fetchTasksFromServer();
+}
+
+MainWindow::~MainWindow()
+{
+    disconnect(m_pushButton, &QPushButton::clicked, this, nullptr);
+    disconnect(m_saveButton, &QPushButton::clicked, this, nullptr);
+    disconnect(m_deleteButton, &QPushButton::clicked, this, nullptr);
+    disconnect(m_ascendingButton, &QPushButton::clicked, this, nullptr);
+    disconnect(m_descendingButton, &QPushButton::clicked, this, nullptr);
+    disconnect(m_listView->selectionModel(), &QItemSelectionModel::currentChanged, this, nullptr);
+    disconnect(m_taskModel, &TaskListModel::taskAdded, this, nullptr);
+    disconnect(m_taskModel, &TaskListModel::taskRemoved, this, nullptr);
+    m_thread->quit();
+    m_thread->wait();
+
+    delete m_dataLoader;
+    
+    saveTasks();
+}
+
+void MainWindow::setupWidgets()
+{
+
+    QWidget *centralWidget = new QWidget(this);
+    setCentralWidget(centralWidget);
     m_lineEdit = new QLineEdit(this);
     m_pushButton = new QPushButton(QString("Ajouter"), this);
     m_saveButton = new QPushButton(QString("Sauvegarder"), this);
@@ -27,41 +56,16 @@ MainWindow::MainWindow()
     m_descendingButton = new QPushButton(QString("Ordre descroissant"), this);
     m_loadButton = new QPushButton(QString("Load Data"), this);
 
-    m_thread = new QThread(this);
-    m_dataLoader = new DataLoader();
-
     m_loadingLabel = new QLabel("Chargement ...", this);
     m_loadingLabel->setAlignment(Qt::AlignCenter);
     m_loadingLabel->setStyleSheet("color: orange; font-weight: bold;");
     m_loadingLabel->hide();
 
-    m_timeoutTimer = new QTimer(this);
-    m_timeoutTimer->setSingleShot(true);
-    m_timeoutTimer->setInterval(5000);
-
-    // manage the http request
-    m_networkManager = new QNetworkAccessManager(this);
-
     m_progressBar = new QProgressBar(this);
-
-    m_dataLoader->moveToThread(m_thread);
 
     m_deleteButton->setEnabled(false);
     m_listView = new QListView(this);
     m_listView->setItemDelegate(new TaskDelegate(this));
-    // set the double click action to edit the item
-    // m_listView->setEditTriggers(QAbstractItemView::DoubleClicked);
-    m_taskModel = new TaskListModel(this);
-    m_model = new QSortFilterProxyModel(this);
-    m_listView->setModel(m_model);
-
-    m_model->setSourceModel(m_taskModel);
-    // Indiquer quel rôle utiliser pour le tri/filtre
-    m_model->setFilterRole(TaskRoles::NameRole);
-    m_model->setSortRole(TaskRoles::NameRole);
-    m_model->sort(0, Qt::DescendingOrder);
-
-    m_fileName = "todos.txt";
 
     QVBoxLayout *layout = new QVBoxLayout();
     layout->addWidget(m_lineEdit);
@@ -75,9 +79,38 @@ MainWindow::MainWindow()
     layout->addWidget(m_progressBar);
     layout->addWidget(m_loadingLabel);
     centralWidget->setLayout(layout);
+}
 
-    //loadTasks();
+void MainWindow::setupWorkers()
+{   
+    m_thread = new QThread(this);
+    m_dataLoader = new DataLoader();
 
+    m_timeoutTimer = new QTimer(this);
+    m_timeoutTimer->setSingleShot(true);
+    m_timeoutTimer->setInterval(5000);
+
+    m_networkManager = new QNetworkAccessManager(this);
+
+    m_dataLoader->moveToThread(m_thread);
+
+}
+
+void MainWindow::setupModel()
+{
+    m_taskModel = new TaskListModel(this);
+    m_model = new QSortFilterProxyModel(this);
+    m_listView->setModel(m_model);
+
+    m_model->setSourceModel(m_taskModel);
+    // Indiquer quel rôle utiliser pour le tri/filtre
+    m_model->setFilterRole(TaskRoles::NameRole);
+    m_model->setSortRole(TaskRoles::NameRole);
+    m_model->sort(0, Qt::DescendingOrder);
+}
+
+void MainWindow::setupConnections()
+{
     connect(m_pushButton, &QPushButton::clicked, this, &MainWindow::getLineEditText);
     connect(m_saveButton, &QPushButton::clicked, this, &MainWindow::saveTasks);
     connect(m_deleteButton, &QPushButton::clicked, this, &MainWindow::deleteSelectedTask);
@@ -108,26 +141,6 @@ MainWindow::MainWindow()
         }
         m_thread->start();
     });
-
-
-    //fetchTasksFromServer();
-}
-
-MainWindow::~MainWindow()
-{
-    disconnect(m_pushButton, &QPushButton::clicked, this, nullptr);
-    disconnect(m_saveButton, &QPushButton::clicked, this, nullptr);
-    disconnect(m_deleteButton, &QPushButton::clicked, this, nullptr);
-    disconnect(m_ascendingButton, &QPushButton::clicked, this, nullptr);
-    disconnect(m_descendingButton, &QPushButton::clicked, this, nullptr);
-    disconnect(m_listView->selectionModel(), &QItemSelectionModel::currentChanged, this, nullptr);
-    disconnect(m_taskModel, &TaskListModel::taskAdded, this, nullptr);
-    disconnect(m_taskModel, &TaskListModel::taskRemoved, this, nullptr);
-    m_thread->quit();
-    m_thread->wait();
-    delete m_dataLoader;
-    
-    saveTasks();
 }
 
 void MainWindow::fetchTasksFromServer()
@@ -164,7 +177,7 @@ void MainWindow::parseReply(QNetworkReply* reply)
     
     if(reply->error() != 0)
     {
-        std::cout << "erreur" << std::endl;
+        qWarning() << "Parsing Error";
         return;
     }
     m_loadingLabel->hide();
@@ -177,6 +190,7 @@ void MainWindow::parseReply(QNetworkReply* reply)
         TaskData td;
         td.name = title;
         td.priority = 1;
+        td.completed = obj["completed"].toBool();
         m_taskModel->addTask(td);
     }
     
@@ -198,47 +212,13 @@ void MainWindow::getLineEditText()
 
 void MainWindow::saveTasks()
 {
-    /*
-    QFile saveFile(m_fileName);
-    if(saveFile.open(QIODevice::WriteOnly | QIODevice::Text))
-    {
-        QTextStream stream(&saveFile);
-        for(int i = 0; i < m_taskModel->rowCount(); ++i)
-        {
-            stream << m_taskModel->data(m_taskModel->index(i), TaskRoles::NameRole).toString() << " " << m_taskModel->data(m_taskModel->index(i), TaskRoles::PriorityRole).toString() << " " << m_taskModel->data(m_taskModel->index(i), TaskRoles::DateRole).toDateTime().toString(Qt::ISODate) << "\n";
-            qDebug() << "save " << m_taskModel->data(m_taskModel->index(i), TaskRoles::NameRole).toString() << " " << m_taskModel->data(m_taskModel->index(i), TaskRoles::PriorityRole).toString() << " " << m_taskModel->data(m_taskModel->index(i), TaskRoles::DateRole).toDateTime().toString(Qt::ISODate).trimmed();
-        }
-        saveFile.close();
-    }
-    */
     m_taskModel->saveTasksToJson();
 }
 
 void MainWindow::loadTasks()
 {
-    /*QFile loadFile(m_fileName);
-    if (!loadFile.exists())
-    {
-        return;
-    }
-    if (loadFile.open(QIODevice::ReadOnly | QIODevice::Text))
-    {
-        m_taskModel->removeRows(0, m_taskModel->rowCount());
-        QTextStream stream(&loadFile);
-        QStringList tmpList;
-        while (!stream.atEnd())
-        {
-            auto datas = stream.readLine().split(" ");
-            TaskData td;
-            td.name = datas[0];
-            td.priority = datas[1].toInt();
-            td.createdDate = QDateTime::fromString(datas[2].trimmed(), Qt::ISODate);
-            qDebug() << "load " << td.name << " " << td.priority << " " << td.createdDate.toString(Qt::ISODate);
-            m_taskModel->addTask(td);
-        }
-        loadFile.close();
-    }*/
-    m_taskModel->loadTaskFromJson();
+    m_taskModel->removeRows(0, m_taskModel->rowCount());
+    m_taskModel->loadTasksFromJson();
 }
 
 void MainWindow::deleteSelectedTask()

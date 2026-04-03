@@ -22,6 +22,7 @@ QVariant TaskListModel::data(const QModelIndex& index, int role) const
         case NameRole:     return task.name;
         case PriorityRole: return task.priority;
         case DateRole:     return task.createdDate;
+        case CompletedRole: return task.completed;
         default:           return QVariant();
     }
 }
@@ -81,7 +82,8 @@ void TaskListModel::saveTasksToJson()
         QJsonObject taskObj;
         taskObj["name"] = td.name;
         taskObj["priority"] = td.priority;
-        taskObj["createdDate"] = td.createdDate.toString();
+        taskObj["createdDate"] = td.createdDate.toString(Qt::ISODate);
+        taskObj["completed"] = td.completed;
         taskArray.push_back(taskObj);
     }
 
@@ -94,7 +96,7 @@ void TaskListModel::saveTasksToJson()
     file.close();
 }
 
-void TaskListModel::loadTaskFromJson()
+void TaskListModel::loadTasksFromJson()
 {
     QFile file("json.txt");
     if(!file.exists() || !file.open(QIODevice::ReadOnly | QIODevice::Text))
@@ -104,7 +106,7 @@ void TaskListModel::loadTaskFromJson()
     }
 
     QJsonParseError parseError;
-    QJsonDocument doc = QJsonDocument::fromJson(file.readAll());
+    QJsonDocument doc = QJsonDocument::fromJson(file.readAll(), &parseError);
     file.close();
 
     if (parseError.error != QJsonParseError::NoError)
@@ -123,7 +125,7 @@ void TaskListModel::loadTaskFromJson()
         if(!val.isObject()) continue;
         QJsonObject obj = val.toObject();
 
-        if (!obj.contains("name") || !obj.contains("priority") || !obj.contains("createdDate"))
+        if (!obj.contains("name") || !obj.contains("priority") || !obj.contains("createdDate") || !obj.contains("completed"))
         {
             qWarning() << "Objet incomplet dans le fichier, objet ignoré";
             continue;
@@ -133,6 +135,7 @@ void TaskListModel::loadTaskFromJson()
         td.name = obj["name"].toString();
         td.priority = obj["priority"].toInt();
         td.createdDate = QDateTime::fromString(obj["createdDate"].toString(),Qt::ISODate);
+        td.completed = obj["completed"].toBool();
         addTask(td);
     }
 

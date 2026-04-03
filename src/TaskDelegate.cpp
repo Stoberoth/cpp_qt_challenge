@@ -4,6 +4,8 @@
 #include <QModelIndex>
 #include <QStyle>
 #include <QDateTime>
+#include "../include/TaskData.hpp"
+#include <QDebug>
 
 TaskDelegate::TaskDelegate(QObject *parent)
     : QStyledItemDelegate(parent) {}
@@ -29,8 +31,7 @@ void TaskDelegate::paint(QPainter *painter, const QStyleOptionViewItem &option, 
 
     // 5. Dessiner le texte (récupéré du modèle)
 
-    QString text = index.data(Qt::UserRole + 1).toString();
-    QDateTime date = index.data(Qt::UserRole + 3).toDateTime();
+    QString text = index.data(TaskRoles::NameRole).toString();
     QRect textRect = option.rect;
     textRect.setLeft(textRect.left() + 10);
     textRect.setRight(textRect.right() - 10);
@@ -43,9 +44,9 @@ void TaskDelegate::paint(QPainter *painter, const QStyleOptionViewItem &option, 
         painter->setPen(QColor("#333333"));
 
     painter->drawText(textRect, Qt::AlignLeft | Qt::AlignVCenter, text);
-    painter->drawText(textRect, Qt::AlignRight | Qt::AlignVCenter, date.toString(Qt::ISODate));
 
-    bool isCompleted = index.data(Qt::UserRole).toBool();
+    bool isCompleted = index.data(TaskRoles::CompletedRole).toBool();
+    
     if (isCompleted)
     {
         QRect checkboxRect(option.rect.right() - 30, option.rect.top() + 5, 20, 20);

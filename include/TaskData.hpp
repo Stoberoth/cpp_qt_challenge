@@ -6,18 +6,26 @@
 enum TaskRoles {
     NameRole = Qt::UserRole + 1,
     PriorityRole,
-    DateRole
+    DateRole,
+    CompletedRole
 };
 
 struct TaskData {
     QString name;
-    int priority;
+    int priority = 0;
     QDateTime createdDate;
+    bool completed = false;
 };
 
 class TaskListModel : public QAbstractListModel
 {
     Q_OBJECT
+
+
+    signals:
+        void taskAdded(int index, const QString& name);
+        void taskRemoved(int index);
+        void taskPriorityChanged(int index, int newPriority);
 
     public:
         TaskListModel(QObject* parent = nullptr);
@@ -29,16 +37,13 @@ class TaskListModel : public QAbstractListModel
         bool removeRows(int row, int count, const QModelIndex& parent = QModelIndex()) override;
 
         void saveTasksToJson();
-        void loadTaskFromJson();
+        void loadTasksFromJson();
     public slots:
         void addTask(const TaskData& task);
     private:
 
         QVector<TaskData> m_task;
 
-    signals:
-        void taskAdded(int index, const QString& name);
-        void taskRemoved(int index);
-        void taskPriorityChanged(int index, int newPriority);
+   
 
 };
