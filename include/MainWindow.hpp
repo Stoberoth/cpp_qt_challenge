@@ -1,5 +1,7 @@
 #pragma once
 
+#include <qpushbutton.h>
+
 #include <QKeyEvent>
 #include <QLabel>
 #include <QLineEdit>
@@ -11,13 +13,14 @@
 #include <QObject>
 #include <QProgressBar>
 #include <QPushButton>
+#include <QSettings>
 #include <QSortFilterProxyModel>
 #include <QThread>
 #include <QTimer>
 #include <QWidget>
 
-#include "../include/DataLoader.hpp"
-#include "../include/TaskData.hpp"
+#include "DataLoader.hpp"
+#include "TaskData.hpp"
 
 class MainWindow : public QMainWindow
 {
@@ -31,6 +34,7 @@ class MainWindow : public QMainWindow
     QPushButton* m_ascendingButton;
     QPushButton* m_descendingButton;
     QPushButton* m_loadButton;
+    QPushButton* m_settingsButton;
     QListView* m_listView;
     QSortFilterProxyModel* m_model;
 
@@ -47,6 +51,7 @@ class MainWindow : public QMainWindow
 
     QProgressBar* m_progressBar;
 
+    QSettings* m_settings;
     void setupWidgets();
     void setupWorkers();
     void setupModel();

@@ -4,6 +4,7 @@
 #include <qdatetime.h>
 #include <qlogging.h>
 #include <qnamespace.h>
+#include <qpushbutton.h>
 #include <qsqldatabase.h>
 #include <qsqlerror.h>
 #include <qsqlquery.h>
@@ -18,7 +19,8 @@
 #include <QUrl>
 #include <QVBoxLayout>
 
-#include "../include/TaskDelegate.hpp"
+#include "PreferenceDialog.hpp"
+#include "TaskDelegate.hpp"
 
 MainWindow::MainWindow()
 {
@@ -29,6 +31,9 @@ MainWindow::MainWindow()
     this->setupConnections();
 
     qWarning() << createDatabase();
+
+    resize(m_settings->value("window/size", QSize(800, 600)).toSize());
+    move(m_settings->value("window/pos", QPoint(200, 200)).toPoint());
 
     // fetchTasksFromServer();
 }
@@ -48,6 +53,9 @@ MainWindow::~MainWindow()
 
     delete m_dataLoader;
 
+    m_settings->setValue("window/size", size());
+    m_settings->setValue("window/pos", pos());
+
     saveTasks();
 }
 
@@ -62,6 +70,7 @@ void MainWindow::setupWidgets()
     m_ascendingButton = new QPushButton(QString("Ordre croissant"), this);
     m_descendingButton = new QPushButton(QString("Ordre descroissant"), this);
     m_loadButton = new QPushButton(QString("Load Data"), this);
+    m_settingsButton = new QPushButton(QString("Préférence"), this);
 
     m_loadingLabel = new QLabel("Chargement ...", this);
     m_loadingLabel->setAlignment(Qt::AlignCenter);
@@ -75,6 +84,9 @@ void MainWindow::setupWidgets()
     m_listView->setItemDelegate(new TaskDelegate(this));
 
     QVBoxLayout* layout = new QVBoxLayout();
+
+    m_settings = new QSettings("NicoDev", "ToDoList", this);
+
     layout->addWidget(m_lineEdit);
     layout->addWidget(m_pushButton);
     layout->addWidget(m_listView);
@@ -83,6 +95,7 @@ void MainWindow::setupWidgets()
     layout->addWidget(m_deleteButton);
     layout->addWidget(m_ascendingButton);
     layout->addWidget(m_descendingButton);
+    layout->addWidget(m_settingsButton);
     layout->addWidget(m_progressBar);
     layout->addWidget(m_loadingLabel);
     centralWidget->setLayout(layout);
@@ -142,6 +155,14 @@ void MainWindow::setupConnections()
                     return;
                 }
                 m_thread->start();
+            });
+    connect(m_settingsButton, &QPushButton::clicked, this,
+            [this]
+            {
+                auto* dialog = new PreferenceDialog(this, *m_settings);
+                connect(dialog, &PreferenceDialog::settingsChanged, this,
+                        [this]() { resize(m_settings->value("window/size", QSize(800, 600)).toSize()); });
+                dialog->open();
             });
 }
 

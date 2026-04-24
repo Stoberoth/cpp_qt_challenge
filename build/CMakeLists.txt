@@ -4,6 +4,8 @@ project(UniquePtrDemo LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 # Centraliser la sortie des binaires
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
@@ -18,6 +20,7 @@ file(GLOB_RECURSE include "../include/*.hpp")
 # Assure-toi que ce fichier a un "int main()"
 #add_executable(unique_demo ../src/main.cpp ../src/MainWindow.cpp ../include/MainWindow.hpp)
 add_executable(unique_demo ${src} ${include})
+target_include_directories(unique_demo PRIVATE ../include)
 
 # # 2️⃣ L'exécutable de test
 # # SI tu utilises QtTest, il faut lier les libs, sinon le main sera manquant !
