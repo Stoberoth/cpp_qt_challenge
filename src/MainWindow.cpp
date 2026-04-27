@@ -21,6 +21,7 @@
 
 #include "PreferenceDialog.hpp"
 #include "TaskDelegate.hpp"
+#include "XMLParser.hpp"
 
 MainWindow::MainWindow()
 {
@@ -350,13 +351,19 @@ void MainWindow::saveTasks()
             updateTasksInDatabase();
         }
     }
+    XMLParser::saveTasks(tasks);
 }
 
 void MainWindow::loadTasks()
 {
     m_taskModel->removeRows(0, m_taskModel->rowCount());
     // m_taskModel->loadTasksFromJson();
-    getTasksInDatabase();
+    // getTasksInDatabase();
+    auto list = XMLParser::streamLoad();
+    for (auto task : list)
+    {
+        m_taskModel->addTask(task);
+    }
 }
 
 void MainWindow::deleteSelectedTask()
